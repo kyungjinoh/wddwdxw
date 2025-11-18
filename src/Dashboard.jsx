@@ -10,6 +10,24 @@ const STARTING_TOKENS = 100
 const COST_EMAIL = 5
 const COST_CALENDLY = 10
 
+// Ensure Calendly links always go to https://calendly.com/... even if CSV has
+// values like "calendly.com/xyz" or site-relative links such as
+// "https://www.meetingsfor1000.com/calendly.com/xyz"
+const normalizeCalendlyLink = (value) => {
+  if (!value) return ''
+  let href = String(value).trim()
+  // Strip our own domain prefix if present
+  href = href.replace(/^https?:\/\/(www\.)?meetingsfor1000\.com\//i, '')
+  // Normalize www/calendly variants to canonical
+  href = href.replace(/^https?:\/\/www\.calendly\.com/i, 'https://calendly.com')
+  href = href.replace(/^http:\/\/(www\.)?calendly\.com/i, 'https://calendly.com')
+  // If no protocol and starts with calendly.com/... add https
+  if (/^calendly\.com\//i.test(href)) {
+    href = `https://${href}`
+  }
+  return href
+}
+
 function Dashboard() {
   const navigate = useNavigate()
   const [data, setData] = useState([])
@@ -47,7 +65,11 @@ function Dashboard() {
       // Load saved reveals
       const revSnap = await getDocs(collection(db, 'users', user.uid, 'reveals'))
       const revMap = {}
-      revSnap.forEach(ds => { revMap[ds.id] = ds.data() })
+      revSnap.forEach(ds => {
+        const d = ds.data() || {}
+        const normalized = Array.isArray(d.calendlyLinks) ? d.calendlyLinks.map(normalizeCalendlyLink) : undefined
+        revMap[ds.id] = { ...d, calendlyLinks: normalized || d.calendlyLinks }
+      })
       setRevealsByKey(revMap)
     })
     return () => unsub()
@@ -184,7 +206,8 @@ function Dashboard() {
 
   const revealCalendly = async (rowKey, row) => {
     const lastColValue = row[Object.keys(row)[Object.keys(row).length - 1]]
-    const calendlyLinks = typeof lastColValue === 'string' ? lastColValue.split(',').map(s => s.trim()).filter(Boolean) : []
+    const calendlyLinksRaw = typeof lastColValue === 'string' ? lastColValue.split(',').map(s => s.trim()).filter(Boolean) : []
+    const calendlyLinks = calendlyLinksRaw.map(normalizeCalendlyLink)
     if (!calendlyLinks.length || spendingCalendlyKey === rowKey) return
     setSpendingCalendlyKey(rowKey)
     const res = await spendTokens(COST_CALENDLY, { type: 'calendly', rowKey })
@@ -279,7 +302,9 @@ function Dashboard() {
                   {getCurrentPageData().map((row, index) => {
                     const rowKey = getRowKey(row)
                     const lastColValue = row[Object.keys(row)[Object.keys(row).length - 1]]
-                    const calendlyLinks = typeof lastColValue === 'string' ? lastColValue.split(',').map(s => s.trim()).filter(Boolean) : []
+                    const calendlyLinks = (typeof lastColValue === 'string' 
+                      ? lastColValue.split(',').map((s) => normalizeCalendlyLink(s.trim())).filter(Boolean)
+                      : [])
                     const emailValue = row.Email
                     const emailRevealed = !!(revealsByKey[rowKey]?.email)
                     const calendlyRevealed = !!(revealsByKey[rowKey]?.calendlyLinks?.length)
@@ -303,7 +328,7 @@ function Dashboard() {
                               {(revealsByKey[rowKey]?.calendlyLinks || calendlyLinks).map((href, i) => (
                                 <a
                                   key={i}
-                                  href={href}
+                                  href={normalizeCalendlyLink(href)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="calendly-link"
@@ -392,7 +417,7 @@ function Dashboard() {
                     <td>
                       <div className="calendly-links">
                         {(rev.calendlyLinks || []).map((href, i) => (
-                          <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="calendly-link">Book Meeting</a>
+                          <a key={i} href={normalizeCalendlyLink(href)} target="_blank" rel="noopener noreferrer" className="calendly-link">Book Meeting</a>
                         ))}
                       </div>
                     </td>

@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import './App.css'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth, db } from './firebase'
 import { collection, getCountFromServer } from 'firebase/firestore'
+import { useNavigate } from 'react-router-dom'
 
 function App() {
+  const navigate = useNavigate()
   const [registeredCount, setRegisteredCount] = useState(0)
   const spotsLeft = Math.max(0, 1000 - registeredCount)
-  const navigate = useNavigate()
+
 
   const [currentUser, setCurrentUser] = useState(null)
 
@@ -34,13 +35,7 @@ function App() {
     fetchUserCount()
   }, [])
 
-  const handlePrimaryAction = () => {
-    if (currentUser) {
-      navigate('/dashboard')
-    } else {
-      navigate('/login')
-    }
-  }
+
 
   return (
     <div className="landing-container">
@@ -50,8 +45,8 @@ function App() {
         <span>Exclusively for 1000 founders</span><br />
         <span className="spots-left"><span className="flicker">{spotsLeft}</span> spots left</span>
       </p>
-      <button className="login-btn" onClick={handlePrimaryAction}>
-        {currentUser ? 'Go to Dashboard' : 'Log In'}
+      <button className="login-btn" onClick={() => navigate('/login')}>
+        Log In
       </button>
     </div>
   )
