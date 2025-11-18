@@ -10,7 +10,6 @@ function App() {
   const [registeredCount, setRegisteredCount] = useState(0)
   const spotsLeft = Math.max(0, 1000 - registeredCount)
 
-
   const [currentUser, setCurrentUser] = useState(null)
 
   useEffect(() => {
@@ -34,8 +33,6 @@ function App() {
     }
     fetchUserCount()
   }, [])
-
-
 
   return (
     <div className="landing-container">
