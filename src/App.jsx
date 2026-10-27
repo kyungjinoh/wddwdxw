@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { onAuthStateChanged } from 'firebase/auth'
-import { auth, db } from './firebase'
-import { collection, getCountFromServer } from 'firebase/firestore'
+import { auth } from './firebase'
 import { useNavigate } from 'react-router-dom'
 
 function App() {
   const navigate = useNavigate()
-  const [registeredCount, setRegisteredCount] = useState(0)
-  const spotsLeft = Math.max(0, 1000 - registeredCount)
+  const spotsLeft = 0
 
   const [currentUser, setCurrentUser] = useState(null)
 
@@ -17,21 +15,6 @@ function App() {
       setCurrentUser(user)
     })
     return () => unsub()
-  }, [])
-
-  useEffect(() => {
-    const fetchUserCount = async () => {
-      try {
-        const q = collection(db, 'users')
-        const snapshot = await getCountFromServer(q)
-        const count = snapshot.data().count || 0
-        setRegisteredCount(count)
-      } catch (e) {
-        // Fail silently; keep default 0 if counting not available
-        console.error('Failed to get user count:', e)
-      }
-    }
-    fetchUserCount()
   }, [])
 
   return (
