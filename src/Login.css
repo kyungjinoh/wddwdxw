@@ -88,6 +88,13 @@
   color: #4285f4;
 }
 
+.login-submit:disabled,
+.google-btn:disabled,
+.login-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .google-logo {
   width: 20px;
   height: 20px;
